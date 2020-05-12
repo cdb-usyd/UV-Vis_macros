@@ -1,0 +1,102 @@
+Sub first_processMultiscanUVVis()
+'
+' Tidy UV-vis multiscan output (written for the output of Scanning Kinetics by Agilent. This macro should be run first, before 'oneWavelengthProcess'.
+'
+    Dim firstRunScan As Integer
+    'If the start of the kinetic run is always the first scan, comment out the line below (add a ' before the line) and uncomment (remove the ') the line below that.
+    firstRunScan = InputBox("Please enter which scan is the first scan of the kinetics run. Usually '1', but if there is a baseline scan, it might be '2'", "First scan of the run", "1")
+    'firstRunScan = 1
+    
+    Dim sheetName, secondSheetName As String
+    sheetName = "All_wavelengths"
+    Application.ScreenUpdating = False
+    
+    ActiveSheet.Copy After:=Worksheets(Sheets.Count)
+    On Error Resume Next
+    ActiveSheet.Name = sheetName
+    Dim samplename, sampleInfo, sampleTime As String
+    Dim numberOfColumns, sampleTimeLine, targetLambdaLine, reducedNumberOfColumns As Integer
+    
+    samplename = Cells(1, 1).Value
+    Cells(1, 1).Value = ""
+    Cells(1, 2).Value = samplename
+    sampleTimeLine = Sheets(sheetName).Range("A:A").Find(samplename, searchOrder:=xlByRows, searchdirection:=xlNext).Row + 2
+    sampleInfo = Cells(sampleTimeLine, 1).Value
+    sampleTime = Right(sampleInfo, 11)
+    sampleTime = Left(sampleTime, 8)
+    sampleTime = Trim(sampleTime)
+    Cells(2, 2).Value = sampleTime
+    numberOfColumns = Sheets(sheetName).Cells.Find("*", searchOrder:=xlByColumns, searchdirection:=xlPrevious).Column
+    
+    For i = 2 To (numberOfColumns) / 2
+        samplename = Cells(1, i + 1).Value
+        sampleTimeLine = Sheets(sheetName).Range("A:A").Find(samplename, searchOrder:=xlByRows, searchdirection:=xlNext).Row + 2
+        sampleInfo = Cells(sampleTimeLine, 1).Value
+        sampleTime = Right(sampleInfo, 11)
+        sampleTime = Left(sampleTime, 8)
+        sampleTime = Trim(sampleTime)
+        Columns(i + 1).EntireColumn.Delete
+        Cells(1, i + 1).Value = samplename
+        Cells(2, i + 1).Value = sampleTime
+    Next i
+    
+    Rows(3).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+    For j = 2 To (numberOfColumns / 2) + 1
+        sampleTime = Cells(2, j).Value
+        Cells(3, j).Value = sampleTime - Cells(2, firstRunScan + 1).Value
+    Next j
+    Cells(3, firstRunScan + 1).Value = 0
+   
+
+    Dim allRange, allRangeX, allRangeYs As Range
+    Dim allChart As Object
+    Dim lastRow As Integer
+    Dim xMin, xMax As Double
+    Dim reducedData As Boolean
+    reducedData = False
+    lastRow = ActiveSheet.Range("E:E").Find("*", searchOrder:=xlByRows, searchdirection:=xlPrevious).Row
+    reducedNumberOfColumns = Sheets(sheetName).Cells.Find("*", searchOrder:=xlByColumns, searchdirection:=xlPrevious).Column
+    If reducedNumberOfColumns > 255 Then
+        For h = 255 To reducedNumberOfColumns
+            Columns(256).EntireColumn.Delete
+        Next h
+        reducedNumberOfColumns = Sheets(sheetName).Cells.Find("*", searchOrder:=xlByColumns, searchdirection:=xlPrevious).Column
+        reducedData = True
+    End If
+    xMax = Cells(4, 1).Value
+    xMin = Cells(lastRow, 1).Value
+    Set allRange = ActiveSheet.Range(Cells(3, 1), Cells(lastRow, reducedNumberOfColumns))
+    Set allRangeXs = ActiveSheet.Range(Cells(3, 1), Cells(lastRow, 1))
+    Set allChart = ActiveSheet.ChartObjects.Add(Left:=Cells(3, 5).Left, Width:=600, Top:=Cells(3, 5).Top, Height:=400) 'Position
+    With allChart.Chart
+        .SetSourceData Source:=allRange
+        .SeriesCollection().XValues = allRangeXs
+        .ChartType = xlXYScatterSmoothNoMarkers
+        .HasTitle = True
+        .ChartTitle.Text = "Absorbance vs wavelength"
+        .Axes(xlCategory).HasTitle = True
+        .Axes(xlCategory).AxisTitle.Text = "Wavelength / nm"
+        .Axes(xlValue).HasTitle = True
+        .Axes(xlValue).AxisTitle.Text = "Absorbance"
+        .Axes(xlValue).MinimumScale = 0
+        .Axes(xlValue).MaximumScale = 2
+        .SeriesCollection(1).XValues = "=" & axisRange.Address(False, False, xlA1, xlExternal)
+        .Axes(xlCategory).MinimumScale = Round(xMin, 0)
+        .Axes(xlCategory).MaximumScale = Round(xMax, 0)
+        .HasLegend = True
+    End With
+    Cells(3, 1).Value = "Elapsed time"
+    Application.ScreenUpdating = True
+    
+    If reducedData = True Then
+        MsgBox "There was more data than excel could handle. All data beyond column 255 were deleted in the " & sheetName & " worksheet."
+    End If
+        
+    Exit Sub
+    
+chartError:
+    MsgBox "An error occurred preventing the creation of the chart."
+    
+End Sub
+
+

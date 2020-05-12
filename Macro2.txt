@@ -1,0 +1,63 @@
+Sub second_oneWavelengthProcess()
+'
+' Select a wavelength, takes that data and arranges it for kinetic interpretation. This macro should be run second.
+'
+    Dim secondSheetName As String
+    Dim doubleTargetLambda As Double
+    Dim targetLambdaLine, numberOfColumns As Integer
+        
+    doubleTargetLambda = ActiveCell.Value
+    secondSheetName = "Data@" & Right(Left(Str(doubleTargetLambda), 4), 3)
+    Application.ScreenUpdating = False
+
+    If doubleTargetLambda < 200 Then
+        MsgBox "Select the wavelength to process. minimum = 200, change the macro code if you actually have data below 200 nm"
+        Exit Sub
+    End If
+    targetLambdaLine = ActiveSheet.Range("A:A").Find(doubleTargetLambda, searchOrder:=xlByRows, searchdirection:=xlNext).Row
+    numberOfColumns = ActiveSheet.Cells.Find("*", searchOrder:=xlByColumns, searchdirection:=xlPrevious).Column
+    
+    Dim targetWorksheet As Worksheet
+    Set targetWorksheet = ActiveSheet
+    With targetWorksheet
+        Set timeArray = .Range(.Cells(3, 2), .Cells(3, numberOfColumns))
+        Set absorbancesArray = .Range(.Cells(targetLambdaLine, 2), .Cells(targetLambdaLine, numberOfColumns))
+    End With
+       
+    ActiveWorkbook.Sheets.Add After:=Worksheets(Sheets.Count)
+    ActiveSheet.Name = secondSheetName
+    Cells(1, 1).Value = "Elapsed Time / s"
+    Cells(1, 2).Value = "Absorbance @ " & doubleTargetLambda
+    Cells(1, 3).Value = "Ln(Abs)"
+    For i = 1 To numberOfColumns - 1
+    Cells(i + 1, 1) = Hour(timeArray(i)) * 3600 + Minute(timeArray(i)) * 60 + Second(timeArray(i))
+    Cells(i + 1, 2) = absorbancesArray(i)
+    On Error Resume Next
+    Cells(i + 1, 3) = Application.WorksheetFunction.Ln(absorbancesArray(i) / absToConc)
+    Next i
+   
+    Dim rngX, rngY, xyRange As Range
+    Dim cht As Object
+    Set xyRange = ActiveSheet.Range("A2:B" & numberOfColumns)
+    Set rngX = ActiveSheet.Range("A2:A" & numberOfColumns)
+    Set rngY = ActiveSheet.Range("C2:C" & numberOfColumns)
+    
+    Set cht = ActiveSheet.Shapes.AddChart2(Left:=Cells(5, 9).Left, Width:=600, Top:=Cells(5, 9).Top, Height:=400)
+    With cht.Chart
+        .SeriesCollection(2).Format.Line.Visible = msoFalse
+        .SeriesCollection(1).XValues = rngX
+        .SeriesCollection(1).Values = rngY
+        .ChartType = xlXYScatterLines
+        .HasTitle = True
+        .ChartTitle.Text = "Absorbance vs time at " & Left(doubleTargetLambda, 6) & " nm"
+        .Axes(xlCategory).HasTitle = True
+        .Axes(xlCategory).AxisTitle.Text = "Time / s"
+        .Axes(xlValue).HasTitle = True
+        .Axes(xlValue).AxisTitle.Text = "Absorbance"
+        .HasLegend = False
+    End With
+    Application.ScreenUpdating = True
+    
+End Sub
+
+
