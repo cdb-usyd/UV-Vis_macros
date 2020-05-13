@@ -10,7 +10,7 @@ Macros can be selected from the excel toolbar > View > Macros > View Macros. Sho
 
 Macro1 (first_processMultiscanUVVis()) should be run first, while in the sheet containing the raw output from the UV-vis scanning kinetics. The Macro removes the redundant Wavelength columns and plots the data for preliminary analysis.
 
-Select the wavelength of interestfrom column 1 by clicking into the cell containing that wavelength. Then run Macro2 (second_oneWavelengthProcess()). A sheet will be made containing the data at that wavelength and a plot of the data.
+Select the wavelength of interest from column 1 by clicking into the cell containing that wavelength. Then run Macro2 (second_oneWavelengthProcess()). A sheet will be made containing the data at that wavelength and a plot of the data.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
